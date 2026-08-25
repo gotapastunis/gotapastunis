@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go tapas - Comptoir à Tapas</title>
+    <style>
+        /* Variables et Reset */
+        :root {
+            --primary: #d32f2f; /* Rouge tapas */
+            --bg-light: #f9f9f9;
+            --text-dark: #222;
+            --text-gray: #666;
+            --border: #eaeaea;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-light); color: var(--text-dark); overflow-x: hidden; }
+
+        /* Header Principal */
+        header {
+            background-color: white; padding: 20px 5%; display: flex;
+            justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 101;
+        }
+        .logo { font-size: 1.5rem; font-weight: bold; color: var(--primary); letter-spacing: 1px;}
+        .nav-links a { margin-left: 20px; text-decoration: none; color: var(--text-dark); font-weight: 500; }
+        .nav-links a:hover { color: var(--primary); }
+
+        /* Section Hero (Bannière) */
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1515443961218-a51367888e4b?auto=format&fit=crop&w=1600&q=80') center/cover;
+            color: white; text-align: center; padding: 80px 20px;
+        }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 15px; }
+        .hero p { font-size: 1.2rem; margin-bottom: 30px; }
+        .btn-primary {
+            background-color: var(--primary); color: white; padding: 12px 30px;
+            text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 1.1rem;
+            display: inline-block; transition: 0.3s; cursor: pointer; border: none;
+        }
+        .btn-primary:hover { background-color: #b71c1c; }
+
+        /* Navigation des Catégories (Sticky) */
+        .category-nav {
+            background: white; padding: 15px 5%; display: flex; gap: 15px;
+            position: sticky; top: 73px; /* Juste en dessous du header */
+            z-index: 100; border-bottom: 1px solid var(--border);
+            box-shadow: 0 4px 6px -6px #222; overflow-x: auto; white-space: nowrap;
+        }
+        .cat-tab {
+            padding: 8px 16px; background: var(--bg-light); border-radius: 20px;
+            cursor: pointer; font-weight: 600; font-size: 0.95rem; border: none;
+        }
+        .cat-tab.active { background: var(--primary); color: white; }
+
+        /* Conteneur Principal du Menu */
+        .main-container { width: 90%; max-width: 1200px; margin: 40px auto; }
+        .category-section { margin-bottom: 50px; }
+        .section-title { font-size: 1.8rem; margin-bottom: 20px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; display: inline-block;}
+
+        /* Grille Responsive pour les Plats */
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
+        .menu-card {
+            background: white; border: 1px solid var(--border); border-radius: 8px;
+            overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s;
+        }
+        .menu-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .card-img { width: 100%; height: 200px; object-fit: cover; background-color: #eee; }
+        .card-content { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; }
+        .card-title { font-size: 1.2rem; margin-bottom: 10px; }
+        .card-desc { font-size: 0.9rem; color: var(--text-gray); line-height: 1.4; margin-bottom: 15px; flex-grow: 1; }
+        .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 15px;}
+        .card-price { font-weight: bold; font-size: 1.1rem; }
+        .add-btn { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .add-btn:active { transform: scale(0.95); }
+
+        /* Sections Info (Livraison & À Propos) */
+        .info-section { background: white; padding: 40px; border-radius: 8px; margin-bottom: 40px; border: 1px solid var(--border); }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; margin-top: 20px; }
+        .info-box h3 { margin-bottom: 10px; color: var(--primary); }
+
+        /* Panier Flottant (Le bouton en bas) */
+        .floating-cart-btn {
+            position: fixed; bottom: 20px; right: 20px; background: #111; color: white;
+            padding: 15px 25px; border-radius: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: flex; gap: 20px; align-items: center; z-index: 99;
+            transform: translateY(150%); transition: transform 0.3s ease; cursor: pointer;
+        }
+        .floating-cart-btn.visible { transform: translateY(0); }
+        .cart-checkout-text { font-weight: bold; }
+
+        /* --- LE PANNEAU LATÉRAL DU PANIER (SIDE DRAWER) --- */
+        .cart-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000; opacity: 0; visibility: hidden; transition: 0.3s;
+        }
+        .cart-overlay.active { opacity: 1; visibility: visible; }
+        
+        .cart-drawer {
+            position: fixed; top: 0; right: -400px; width: 400px; height: 100%;
+            background: white; z-index: 1001; box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; transition: right 0.3s ease;
+        }
+        .cart-drawer.active { right: 0; }
+        
+        .cart-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .cart-header h2 { font-size: 1.5rem; }
+        .close-cart { background: none; border: none; font-size: 2rem; cursor: pointer; line-height: 1; color: var(--text-gray); }
+        
+        .cart-items { padding: 20px; flex-grow: 1; overflow-y: auto; }
+        .cart-item { display: flex; justify-content: space-between; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+        .item-details { display: flex; flex-direction: column; }
+        .item-name { font-weight: bold; }
+        .item-price { color: var(--text-gray); margin-top: 5px; }
+        .remove-item { color: var(--primary); background: none; border: none; cursor: pointer; font-size: 0.85rem; text-align: left; margin-top: 5px; }
+        
+        .cart-footer-drawer { padding: 20px; border-top: 1px solid var(--border); background: var(--bg-light); }
+        .cart-total-row { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; }
+        .checkout-btn { width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 5px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
+
+        /* Media Queries pour Mobile */
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .hero { padding: 50px 20px; }
+            .floating-cart-btn { bottom: 0; right: 0; width: 100%; border-radius: 0; justify-content: space-between; }
+            .cart-drawer { width: 100%; right: -100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">Go tapas</div>
+        <nav class="nav-links">
+            <a href="#menu">Le Menu</a>
+            <a href="#livraison">Zones de Livraison</a>
+            <a href="#apropos">À Propos</a>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>L'authentique comptoir à Tapas, chez vous.</h1>
+        <p>Préparé à la commande, livré à Tunis et sa banlieue.</p>
+        <button class="btn-primary" onclick="document.getElementById('menu').scrollIntoView({ behavior: 'smooth' });">Commander en ligne</button>
+    </section>
+
+    <!-- Navigation Catégories -->
+    <div class="category-nav" id="categoryNav"></div>
+
+    <!-- Conteneur Principal -->
+    <div class="main-container">
+        
+        <!-- Section Menu -->
+        <div id="menu"></div>
+
+        <!-- Section Livraison -->
+        <div class="info-section" id="livraison">
+            <h2 class="section-title">Zones et Conditions de Livraison</h2>
+            <div class="info-grid">
+                <div class="info-box">
+                    <h3>Zones Desservies</h3>
+                    <p>Nous livrons actuellement sur : El Manar, El Menzah, Ennasr, L'Aouina, Les Berges du Lac 1 & 2, et La Soukra.</p>
+                </div>
+                <div class="info-box">
+                    <h3>Horaires</h3>
+                    <p>Ouvert tous les jours.<br>Service du midi : 12h00 - 15h00<br>Service du soir : 19h00 - 23h00</p>
+                </div>
+                <div class="info-box">
+                    <h3>Frais de livraison</h3>
+                    <p>Livraison standard : 4.00 TND.<br>Gratuite pour toute commande supérieure à 60 TND.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section À Propos -->
+        <div class="info-section" id="apropos">
+            <h2 class="section-title">Notre Concept : Go tapas</h2>
+            <p style="line-height: 1.6; margin-bottom: 15px;">
+                Chez <strong>Go tapas</strong>, nous vous offrons une expérience méditerranéenne riche en saveurs à partager. 
+                Notre comptoir se concentre exclusivement sur la livraison de tapas fraîches et savoureuses, préparées à la commande.
+            </p>
+            <p style="line-height: 1.6;">
+                Nos chefs sélectionnent rigoureusement les meilleurs ingrédients (huiles d'olive d'exception, fruits de mer frais, 
+                volailles marinées et fromages affinés) pour vous garantir un voyage culinaire unique en moins de 45 minutes.
+            </p>
+        </div>
+
+    </div>
+
+    <!-- Bouton Panier Flottant -->
+    <div class="floating-cart-btn" id="cartTrigger" onclick="toggleCart()">
+        <div id="cartSummary">0 article • 0.00 TND</div>
+        <div class="cart-checkout-text">Voir le panier ➔</div>
+    </div>
+
+    <!-- PANNEAU LATÉRAL DU PANIER (DRAWER) -->
+    <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+    <div class="cart-drawer" id="cartDrawer">
+        <div class="cart-header">
+            <h2>Votre Commande</h2>
+            <button class="close-cart" onclick="toggleCart()">&times;</button>
+        </div>
+        <div class="cart-items" id="cartItemsList"></div>
+        <div class="cart-footer-drawer">
+            <div class="cart-total-row">
+                <span>Total :</span>
+                <span id="cartDrawerTotal">0.00 TND</span>
+            </div>
+            <button class="checkout-btn" onclick="alert('Redirection vers la page de paiement sécurisé...')">Valider la commande</button>
+        </div>
+    </div>
+
+    <script>
+        // Les Données JSON (Sans charcuterie ibérique)
+        const menuData = {
+            "currency": "TND",
+            "categories": [
+                {
+                    "id": "tapas-chaudes",
+                    "title": "Tapas Chaudes",
+                    "items": [
+                        { "id": "t1", "name": "Patatas Bravas", "desc": "Pommes de terre croustillantes, sauce bravas épicée et aïoli maison.", "price": 12.00, "img": "https://images.unsplash.com/photo-1598514982205-f36b96d1e8d4?auto=format&fit=crop&w=500&q=60" },
+                        { "id": "t2", "name": "Croquetas de Pollo", "desc": "Croquettes fondantes à la béchamel et au poulet effiloché (4 pièces).", "price": 15.00, "img": "https://images.unsplash.com/photo-1626200419189-39c878fb6e7b?auto=format&fit=crop&w=500&q=60" },
+                        { "id": "t3", "name": "Gambas al Ajillo", "desc": "Crevettes sautées à l'ail, piment doux et huile d'olive vierge extra.", "price": 22.00, "img": "https://images.unsplash.com/photo-1625944525533-473f1a3d54e7?auto=format&fit=crop&w=500&q=60" }
+                    ]
+                },
+                {
+                    "id": "planches",
+                    "title": "Les Planches à Partager",
+                    "items": [
+                        { "id": "p1", "name": "Planche Méditerranéenne", "desc": "Assortiment de fromages affinés, légumes grillés marinés, olives et pan con tomate.", "price": 38.00, "img": "https://images.unsplash.com/photo-1606357497169-9f5b66d49cb0?auto=format&fit=crop&w=500&q=60" },
+                        { "id": "p2", "name": "Assiette Manchego", "desc": "Fromage de brebis affiné, servi avec confiture de figues et noix.", "price": 18.00, "img": "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=500&q=60" }
+                    ]
+                }
+            ]
+        };
+
+        let cart = [];
+
+        function initApp() {
+            const navContainer = document.getElementById('categoryNav');
+            const menuContainer = document.getElementById('menu');
+
+            menuData.categories.forEach((cat, index) => {
+                const tab = document.createElement('button');
+                tab.className = `cat-tab ${index === 0 ? 'active' : ''}`;
+                tab.innerText = cat.title;
+                tab.onclick = () => {
+                    document.getElementById(cat.id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                };
+                navContainer.appendChild(tab);
+
+                const section = document.createElement('div');
+                section.className = 'category-section';
+                section.id = cat.id;
+                section.innerHTML = `<h2 class="section-title">${cat.title}</h2>`;
+                
+                const grid = document.createElement('div');
+                grid.className = 'menu-grid';
+
+                cat.items.forEach(item => {
+                    grid.innerHTML += `
+                        <div class="menu-card">
+                            <img src="${item.img}" alt="${item.name}" class="card-img" loading="lazy">
+                            <div class="card-content">
+                                <h3 class="card-title">${item.name}</h3>
+                                <p class="card-desc">${item.desc}</p>
+                                <div class="card-footer">
+                                    <span class="card-price">${item.price.toFixed(2)} ${menuData.currency}</span>
+                                    <button class="add-btn" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">Ajouter</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                section.appendChild(grid);
+                menuContainer.appendChild(section);
+            });
+        }
+
+        function addToCart(id, name, price) {
+            cart.push({ id, name, price, uid: Date.now() });
+            updateCartUI();
+        }
+
+        function removeFromCart(uid) {
+            cart = cart.filter(item => item.uid !== uid);
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const triggerBtn = document.getElementById('cartTrigger');
+            const summaryText = document.getElementById('cartSummary');
+            const drawerList = document.getElementById('cartItemsList');
+            const drawerTotal = document.getElementById('cartDrawerTotal');
+            
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+
+            if (cart.length > 0) {
+                summaryText.innerText = `${cart.length} article${cart.length > 1 ? 's' : ''} • ${total.toFixed(2)} ${menuData.currency}`;
+                triggerBtn.classList.add('visible');
+            } else {
+                triggerBtn.classList.remove('visible');
+                document.getElementById('cartDrawer').classList.remove('active');
+                document.getElementById('cartOverlay').classList.remove('active');
+            }
+
+            drawerList.innerHTML = '';
+            if (cart.length === 0) {
+                drawerList.innerHTML = '<p style="color:#666; text-align:center; margin-top:20px;">Votre panier est vide.</p>';
+            } else {
+                cart.forEach(item => {
+                    drawerList.innerHTML += `
+                        <div class="cart-item">
+                            <div class="item-details">
+                                <span class="item-name">${item.name}</span>
+                                <button class="remove-item" onclick="removeFromCart(${item.uid})">Retirer</button>
+                            </div>
+                            <span class="item-price">${item.price.toFixed(2)} ${menuData.currency}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            drawerTotal.innerText = `${total.toFixed(2)} ${menuData.currency}`;
+        }
+
+        function toggleCart() {
+            if (cart.length === 0) return;
+            document.getElementById('cartDrawer').classList.toggle('active');
+            document.getElementById('cartOverlay').classList.toggle('active');
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
